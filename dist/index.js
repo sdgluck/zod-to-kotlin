@@ -42,7 +42,27 @@ const RESERVED_TYPES = new Set([
 const ident = (name) => (KEYWORDS.has(name) ? `\`${name}\`` : name);
 /** Set per `generateKotlin` call; the emitter is synchronous, so these can't interleave. */
 let PACKAGE = "";
-let itemName = (root) => `${root}Item`;
+let itemName = defaultItemName;
+function defaultItemName(root, wrapper) {
+    return wrapper === "array" ? `${root}Item` : `${root}Value`;
+}
+/**
+ * The named shape under any lists, maps and optionals, if there is one to
+ * name, and the wrapper directly around it — `List<X>?` is a list of `X`.
+ */
+function wrapped(t, around) {
+    if (t.k === "array" || t.k === "record" || t.k === "nullable")
+        return wrapped(t.of, t.k);
+    if (!around || (t.k !== "object" && t.k !== "enum" && t.k !== "union"))
+        return undefined;
+    return { shape: t, around };
+}
+/** `t` with its innermost shape replaced, keeping every wrapper around it. */
+function rewrap(t, inner) {
+    if (t.k === "array" || t.k === "record" || t.k === "nullable")
+        return { ...t, of: rewrap(t.of, inner) };
+    return inner;
+}
 class Out {
     lines = [];
     depth = 0;
@@ -127,13 +147,18 @@ function declare(name, path, t, out) {
         return (stringEnum(name, path, t.values, out), name);
     if (t.k === "union")
         return (union(name, path, t, out), name);
-    if (t.k === "array" && (t.of.k === "object" || t.of.k === "enum" || t.of.k === "union")) {
-        const item = itemName(name);
+    // A root that wraps a shape (a list, a map, an optional): the shape gets a
+    // name of its own. Naming it from the root collides with the root, and the
+    // collision is resolved by prefixing — `RunDetailOutputRunDetailOutput`.
+    const inner = wrapped(t);
+    let spelt = t;
+    if (inner) {
+        const item = itemName(name, inner.around);
         const parent = path.split(".").slice(0, -1).join(".");
-        declare(item, parent ? `${parent}.${item}` : item, t.of, out);
-        return `List<${item}>`;
+        declare(item, parent ? `${parent}.${item}` : item, inner.shape, out);
+        spelt = rewrap(t, { k: "ref", name: item });
     }
-    return typeRef(t, { out, taken: new Set(), path }, name);
+    return typeRef(spelt, { out, taken: new Set(), path }, name);
 }
 function dataClass(name, path, props, out) {
     const ctx = { out, taken: new Set(), path };
@@ -315,7 +340,7 @@ const BUILTINS = /^(List|Map|String|Long|Double|Boolean|JsonElement)$/;
 export function generateKotlin(types, options) {
     const doc = Array.isArray(types) ? collect(types) : types;
     PACKAGE = options.packageName;
-    itemName = options.itemName ?? ((root) => `${root}Item`);
+    itemName = options.itemName ?? defaultItemName;
     const out = new Out();
     for (const line of options.header ?? [])
         out.line(`// ${line}`);

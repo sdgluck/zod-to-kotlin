@@ -1,6 +1,6 @@
 {
   "name": "zod-to-kotlin",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Zod schemas → Kotlin data classes for kotlinx.serialization: enums that survive new values, discriminated unions as sealed interfaces.",
   "license": "MIT",
   "author": "Sam Gluck",
@@ -42,12 +42,12 @@
   },
   "peerDependencies": {
     "zod": "^4.3.6",
-    "zod-native-ir": "github:sdgluck/zod-native-ir#v0.1.1"
+    "zod-native-ir": "github:sdgluck/zod-native-ir#v0.1.2"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
     "typescript": "^7.0.2",
     "zod": "^4.3.6",
-    "zod-native-ir": "github:sdgluck/zod-native-ir#v0.1.1"
+    "zod-native-ir": "github:sdgluck/zod-native-ir#v0.1.2"
   }
 }

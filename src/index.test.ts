@@ -101,6 +101,26 @@ describe("naming and layout", () => {
     assert.match(k, /\/\/ Films List<Api\.Film> ListSerializer\(Api\.Film\.serializer\(\)\)/);
   });
 
+  test("an optional or map root names the shape it wraps once, not after itself twice", () => {
+    const shape = z.object({ title: z.string() });
+    const k = generateKotlin(
+      [
+        { namespace: "Api", name: "Detail", schema: shape.nullable() },
+        { namespace: "Api", name: "Counts", schema: z.record(z.string(), shape) },
+        { namespace: "Api", name: "Maybe", schema: z.array(shape).nullable() },
+      ],
+      {
+        packageName: "test.model",
+        afterNamespace: (_ns, refs) => [...refs].map(([n, r]) => `// ${n} ${r.type} ${r.serializer}`),
+      },
+    );
+    assert.match(k, /data class DetailValue\(/);
+    assert.doesNotMatch(k, /DetailDetail|CountsCounts/);
+    assert.match(k, /\/\/ Detail Api\.DetailValue\? Api\.DetailValue\.serializer\(\)\.nullable/);
+    assert.match(k, /\/\/ Counts Map<String, Api\.CountsValue> MapSerializer\(String\.serializer\(\), Api\.CountsValue\.serializer\(\)\)/);
+    assert.match(k, /\/\/ Maybe List<Api\.MaybeItem>\? /);
+  });
+
   test("the file starts with the header, the suppressions and the package", () => {
     const k = kotlin(z.string(), { header: ["Generated."], suppress: ["unused"] });
     assert.match(k, /^\/\/ Generated\.\n@file:Suppress\("unused"\)\n\npackage test\.model\n/);

@@ -21,6 +21,8 @@
  */
 import { type IRDocument, type NamedSchema } from "zod-native-ir";
 export type { NamedSchema } from "zod-native-ir";
+/** The wrappers a top-level root can put around the type it names. */
+export type Wrapper = "array" | "record" | "nullable";
 export interface KotlinOptions {
     /** The `package` the file declares. Also prefixes serial descriptor names. */
     packageName: string;
@@ -28,8 +30,13 @@ export interface KotlinOptions {
     header?: string[];
     /** Arguments for a `@file:Suppress(...)` line, e.g. `["unused"]`. */
     suppress?: string[];
-    /** The element type of a top-level array root. Default `${root}Item`. */
-    itemName?: (root: string) => string;
+    /**
+     * The name of the shape a top-level root wraps: the element of a list, the
+     * value of a map, the object behind an optional. `wrapper` is the one
+     * directly around the shape. Default `${root}Item` for a list element and
+     * `${root}Value` otherwise.
+     */
+    itemName?: (root: string, wrapper: Wrapper) => string;
     /**
      * Extra lines after a namespace's `object` — e.g. endpoint descriptors.
      * `refs` maps each root's name to its qualified Kotlin type and a

@@ -90,7 +90,7 @@ generateKotlin(types: NamedSchema[] | IRDocument, options: KotlinOptions): strin
 | `packageName` | the file's `package` (required) |
 | `header` | comment lines for the top of the file |
 | `suppress` | arguments for a `@file:Suppress(...)` line |
-| `itemName(root)` | element class of a top-level array root (default `${root}Item`) — Kotlin has no nested typealias, so the list itself has no name |
+| `itemName(root, wrapper)` | name of the shape a top-level list, map or optional root wraps; `wrapper` is the one directly around it (default `${root}Item` for a list element, `${root}Value` otherwise) — Kotlin has no nested typealias, so the wrapper itself has no name |
 | `afterNamespace(ns, refs)` | extra lines after each namespace `object`; `refs` maps each root's name to `{ type, serializer }`, e.g. `{ type: "List<Api.Film>", serializer: "ListSerializer(Api.Film.serializer())" }` |
 
 The same schemas through [`zod-to-swift`](https://github.com/sdgluck/zod-to-swift)

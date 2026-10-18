@@ -59,7 +59,30 @@ const RESERVED_TYPES = new Set([
 const ident = (name: string) => (KEYWORDS.has(name) ? `\`${name}\`` : name);
 /** Set per `generateKotlin` call; the emitter is synchronous, so these can't interleave. */
 let PACKAGE = "";
-let itemName: (root: string) => string = (root) => `${root}Item`;
+let itemName: (root: string, wrapper: Wrapper) => string = defaultItemName;
+
+/** The wrappers a top-level root can put around the type it names. */
+export type Wrapper = "array" | "record" | "nullable";
+
+function defaultItemName(root: string, wrapper: Wrapper): string {
+  return wrapper === "array" ? `${root}Item` : `${root}Value`;
+}
+
+/**
+ * The named shape under any lists, maps and optionals, if there is one to
+ * name, and the wrapper directly around it — `List<X>?` is a list of `X`.
+ */
+function wrapped(t: IRType, around?: Wrapper): { shape: IRType; around: Wrapper } | undefined {
+  if (t.k === "array" || t.k === "record" || t.k === "nullable") return wrapped(t.of, t.k);
+  if (!around || (t.k !== "object" && t.k !== "enum" && t.k !== "union")) return undefined;
+  return { shape: t, around };
+}
+
+/** `t` with its innermost shape replaced, keeping every wrapper around it. */
+function rewrap(t: IRType, inner: IRType): IRType {
+  if (t.k === "array" || t.k === "record" || t.k === "nullable") return { ...t, of: rewrap(t.of, inner) };
+  return inner;
+}
 
 class Out {
   lines: string[] = [];
@@ -147,13 +170,18 @@ function declare(name: string, path: string, t: IRType, out: Out): string {
   if (t.k === "object") return (dataClass(name, path, t.props, out), name);
   if (t.k === "enum") return (stringEnum(name, path, t.values, out), name);
   if (t.k === "union") return (union(name, path, t, out), name);
-  if (t.k === "array" && (t.of.k === "object" || t.of.k === "enum" || t.of.k === "union")) {
-    const item = itemName(name);
+  // A root that wraps a shape (a list, a map, an optional): the shape gets a
+  // name of its own. Naming it from the root collides with the root, and the
+  // collision is resolved by prefixing — `RunDetailOutputRunDetailOutput`.
+  const inner = wrapped(t);
+  let spelt: IRType = t;
+  if (inner) {
+    const item = itemName(name, inner.around);
     const parent = path.split(".").slice(0, -1).join(".");
-    declare(item, parent ? `${parent}.${item}` : item, t.of, out);
-    return `List<${item}>`;
+    declare(item, parent ? `${parent}.${item}` : item, inner.shape, out);
+    spelt = rewrap(t, { k: "ref", name: item });
   }
-  return typeRef(t, { out, taken: new Set(), path }, name);
+  return typeRef(spelt, { out, taken: new Set(), path }, name);
 }
 
 function dataClass(
@@ -322,8 +350,13 @@ export interface KotlinOptions {
   header?: string[];
   /** Arguments for a `@file:Suppress(...)` line, e.g. `["unused"]`. */
   suppress?: string[];
-  /** The element type of a top-level array root. Default `${root}Item`. */
-  itemName?: (root: string) => string;
+  /**
+   * The name of the shape a top-level root wraps: the element of a list, the
+   * value of a map, the object behind an optional. `wrapper` is the one
+   * directly around the shape. Default `${root}Item` for a list element and
+   * `${root}Value` otherwise.
+   */
+  itemName?: (root: string, wrapper: Wrapper) => string;
   /**
    * Extra lines after a namespace's `object` — e.g. endpoint descriptors.
    * `refs` maps each root's name to its qualified Kotlin type and a
@@ -362,7 +395,7 @@ const BUILTINS = /^(List|Map|String|Long|Double|Boolean|JsonElement)$/;
 export function generateKotlin(types: NamedSchema[] | IRDocument, options: KotlinOptions): string {
   const doc = Array.isArray(types) ? collect(types) : types;
   PACKAGE = options.packageName;
-  itemName = options.itemName ?? ((root) => `${root}Item`);
+  itemName = options.itemName ?? defaultItemName;
   const out = new Out();
   for (const line of options.header ?? []) out.line(`// ${line}`);
   if (options.suppress?.length) out.line(`@file:Suppress(${options.suppress.map((x) => JSON.stringify(x)).join(", ")})`);
