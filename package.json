@@ -1,0 +1,54 @@
+{
+  "name": "zod-to-kotlin",
+  "version": "0.1.0",
+  "description": "Zod schemas → Kotlin data classes for kotlinx.serialization: enums that survive new values, discriminated unions as sealed interfaces.",
+  "license": "MIT",
+  "author": "Sam Gluck",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sdgluck/zod-to-kotlin.git"
+  },
+  "keywords": [
+    "zod",
+    "codegen",
+    "json-schema",
+    "kotlin",
+    "kotlinx-serialization",
+    "android"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --experimental-strip-types 'src/**/*.test.ts'"
+  },
+  "dependencies": {
+    "zod-native-ir": "github:sdgluck/zod-native-ir#v0.1.1"
+  },
+  "peerDependencies": {
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.3",
+    "typescript": "^7.0.2",
+    "zod": "^4.3.6"
+  }
+}
