@@ -96,6 +96,17 @@ generateKotlin(types: NamedSchema[] | IRDocument, options: KotlinOptions): strin
 The same schemas through [`zod-to-swift`](https://github.com/sdgluck/zod-to-swift)
 give the matching Swift.
 
+## Install
+
+```sh
+pnpm add github:sdgluck/zod-to-kotlin#v0.1.1 github:sdgluck/zod-native-ir#v0.1.1
+```
+
+`zod-native-ir` is a peer dependency: the generator accepts and returns its
+types, so it and your code should share one copy. (Depending on it directly also
+keeps pnpm's `blockExoticSubdeps` — on by default since pnpm 11 — happy, since
+it refuses git dependencies of dependencies.)
+
 ## Requirements
 
 Node 22.18+ and zod 4. The generated code needs Kotlin 1.9+ (`entries`) and the

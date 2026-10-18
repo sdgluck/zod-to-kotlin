@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      zod-native-ir:
-        specifier: github:sdgluck/zod-native-ir#v0.1.1
-        version: git+https://github.com/sdgluck/zod-native-ir.git#4398b49faaedc315fd0f0798b25e74ad2de7b586(zod@4.6.7)
     devDependencies:
       '@types/node':
         specifier: ^25.2.3
@@ -21,6 +17,9 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.6.7
+      zod-native-ir:
+        specifier: github:sdgluck/zod-native-ir#v0.1.1
+        version: git+https://github.com/sdgluck/zod-native-ir.git#4398b49faaedc315fd0f0798b25e74ad2de7b586(zod@4.6.7)
 
 packages:
 
